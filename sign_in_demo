@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Sign-In with Django</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 800px;
+        }
+        
+        .tabs {
+            display: flex;
+            width: 100%;
+            background-color: white;
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            background-color: #f8f9fa;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .tab.active {
+            background-color: white;
+            color: #4285f4;
+            border-bottom: 3px solid #4285f4;
+        }
+        
+        .form-container {
+            background-color: white;
+            border-bottom-left-radius: 12px;
+            border-bottom-right-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        p {
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        input {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus {
+            border-color: #4285f4;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+        }
+        
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-bottom: 20px;
+        }
+        
+        .btn-primary {
+            background-color: #4285f4;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #3367d6;
+        }
+        
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 25px 0;
+            color: #777;
+        }
+        
+        .divider::before,
+        .divider::after {
+            content: "";
+            flex: 1;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .divider span {
+            padding: 0 15px;
+        }
+        
+        .google-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #fff;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            color: #3c4043;
+            cursor: pointer;
+            font-size: 16px;
+            height: 50px;
+            padding: 0 20px;
+            margin: 20px 0;
+            transition: background-color 0.3s, box-shadow 0.3s;
+            width: 100%;
+        }
+        
+        .google-btn:hover {
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            background-color: #f8f9fa;
+        }
+        
+        .google-icon {
+            margin-right: 12px;
+            width: 20px;
+            height: 20px;
+        }
+        
+        .user-info {
+            display: none;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            text-align: center;
+        }
+        
+        .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            border: 3px solid #fff;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .welcome {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .email {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .sign-out {
+            background-color: #f1f3f4;
+            border: none;
+            border-radius: 4px;
+            color: #3c4043;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 10px 20px;
+            transition: background-color 0.3s;
+        }
+        
+        .sign-out:hover {
+            background-color: #e8eaed;
+        }
+        
+        .error {
+            color: #d93025;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            color: #999;
+            font-size: 14px;
+        }
+        
+        .form-content {
+            display: none;
+        }
+        
+        .form-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="tabs">
+            <div class="tab active" data-tab="signin">Sign In</div>
+            <div class="tab" data-tab="signup">Sign Up</div>
+        </div>
+        
+        <div class="form-container">
+            <!-- Sign In Form -->
+            <div id="signin-form" class="form-content active">
+                <h1>Welcome Back</h1>
+                <p>Sign in to your account to continue</p>
+                
+                <form id="signinForm">
+                    <div class="form-group">
+                        <label for="signin-email">Email</label>
+                        <input type="email" id="signin-email" placeholder="Enter your email" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="signin-password">Password</label>
+                        <input type="password" id="signin-password" placeholder="Enter your password" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Sign In</button>
+                </form>
+                
+                <div class="divider"><span>or</span></div>
+                
+                <div id="g_id_onload"
+                    data-client_id="YOUR_GOOGLE_CLIENT_ID_HERE"
+                    data-context="signin"
+                    data-ux_mode="popup"
+                    data-callback="handleGoogleSignIn"
+                    data-auto_prompt="false">
+                </div>
+
+                <div class="g_id_signin"
+                    data-type="standard"
+                    data-shape="rectangular"
+                    data-theme="outline"
+                    data-text="signin_with"
+                    data-size="large"
+                    data-logo_alignment="left">
+                </div>
+            </div>
+            
+            <!-- Sign Up Form -->
+            <div id="signup-form" class="form-content">
+                <h1>Create Account</h1>
+                <p>Sign up to get started with our service</p>
+                
+                <form id="signupForm">
+                    <div class="form-group">
+                        <label for="signup-name">Full Name</label>
+                        <input type="text" id="signup-name" placeholder="Enter your full name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="signup-email">Email</label>
+                        <input type="email" id="signup-email" placeholder="Enter your email" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="signup-password">Password</label>
+                        <input type="password" id="signup-password" placeholder="Create a password" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="signup-confirm-password">Confirm Password</label>
+                        <input type="password" id="signup-confirm-password" placeholder="Confirm your password" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Sign Up</button>
+                </form>
+                
+                <div class="divider"><span>or</span></div>
+                
+                <div class="g_id_signin"
+                    data-type="standard"
+                    data-shape="rectangular"
+                    data-theme="outline"
+                    data-text="signup_with"
+                    data-size="large"
+                    data-logo_alignment="left">
+                </div>
+            </div>
+            
+            <div class="user-info" id="userInfo">
+                <img class="avatar" id="avatar" src="" alt="User Avatar">
+                <h2 class="welcome">Welcome, <span id="userName"></span>!</h2>
+                <p class="email" id="userEmail"></p>
+                <button class="sign-out" onclick="signOut()">Sign Out</button>
+            </div>
+            
+            <div class="error" id="errorMessage"></div>
+            
+            <p class="footer">By signing in, you agree to our Terms of Service and Privacy Policy.</p>
+        </div>
+    </div>
+
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script>
+        // Tab switching functionality
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove active class from all tabs
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                // Add active class to clicked tab
+                tab.classList.add('active');
+                
+                // Hide all form contents
+                document.querySelectorAll('.form-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                
+                // Show the selected form content
+                document.getElementById(`${tab.dataset.tab}-form`).classList.add('active');
+            });
+        });
+        
+        // Form submission handlers
+        document.getElementById('signinForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = document.getElementById('signin-email').value;
+            const password = document.getElementById('signin-password').value;
+            
+            // In a real application, you would send this to your Django backend
+            console.log('Sign in attempt:', { email, password });
+            
+            // Simulate successful sign in
+            simulateDjangoAuth({ email, name: 'Test User' });
+        });
+        
+        document.getElementById('signupForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = document.getElementById('signup-name').value;
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const confirmPassword = document.getElementById('signup-confirm-password').value;
+            
+            if (password !== confirmPassword) {
+                showError('Passwords do not match');
+                return;
+            }
+            
+            // In a real application, you would send this to your Django backend
+            console.log('Sign up attempt:', { name, email, password });
+            
+            // Simulate successful sign up
+            simulateDjangoAuth({ email, name });
+        });
+        
+        // Handle the Google sign-in response
+        function handleGoogleSignIn(response) {
+            // The response contains a credential field which is the JWT ID token
+            const responsePayload = parseJwt(response.credential);
+
+            console.log("ID: " + responsePayload.sub);
+            console.log('Full Name: ' + responsePayload.name);
+            console.log('Given Name: ' + responsePayload.given_name);
+            console.log('Family Name: ' + responsePayload.family_name);
+            console.log("Image URL: " + responsePayload.picture);
+            console.log("Email: " + responsePayload.email);
+            
+            // Send to Django backend for verification and user creation
+            sendAuthToDjango({
+                token: response.credential,
+                email: responsePayload.email,
+                name: responsePayload.name,
+                picture: responsePayload.picture
+            });
+        }
+
+        // Function to send authentication data to Django
+        function sendAuthToDjango(userData) {
+            // This would be an AJAX call to your Django backend
+            console.log('Sending to Django:', userData);
+            
+            // Simulate a successful response from Django
+            setTimeout(() => {
+                // Update UI with user info
+                document.getElementById("userName").textContent = userData.name;
+                document.getElementById("userEmail").textContent = userData.email;
+                document.getElementById("avatar").src = userData.picture;
+                
+                // Show user info, hide forms
+                document.getElementById("userInfo").style.display = "block";
+                document.querySelectorAll('.form-content').forEach(form => {
+                    form.style.display = "none";
+                });
+                
+                // Hide any previous errors
+                document.getElementById("errorMessage").style.display = "none";
+            }, 500);
+        }
+        
+        // Simulate Django authentication (for demo purposes)
+        function simulateDjangoAuth(userData) {
+            // Update UI with user info
+            document.getElementById("userName").textContent = userData.name;
+            document.getElementById("userEmail").textContent = userData.email;
+            
+            // Show user info, hide forms
+            document.getElementById("userInfo").style.display = "block";
+            document.querySelectorAll('.form-content').forEach(form => {
+                form.style.display = "none";
+            });
+            
+            // Hide any previous errors
+            document.getElementById("errorMessage").style.display = "none";
+        }
+
+        // Helper function to parse JWT tokens
+        function parseJwt(token) {
+            try {
+                return JSON.parse(atob(token.split('.')[1]));
+            } catch (e) {
+                console.error("Error parsing JWT:", e);
+                showError("Failed to process authentication. Please try again.");
+                return null;
+            }
+        }
+
+        // Function to show error messages
+        function showError(message) {
+            const errorElement = document.getElementById("errorMessage");
+            errorElement.textContent = message;
+            errorElement.style.display = "block";
+        }
+
+        // Function to sign out
+        function signOut() {
+            // For Google Identity Services, we need to prompt the user to sign out
+            if (typeof google !== 'undefined') {
+                google.accounts.id.disableAutoSelect();
+            }
+            
+            // Hide user info, show sign-in form
+            document.getElementById("userInfo").style.display = "none";
+            document.querySelectorAll('.form-content').forEach(form => {
+                form.style.display = "none";
+            });
+            document.getElementById("signin-form").style.display = "block";
+            
+            // Reset forms
+            document.getElementById('signinForm').reset();
+            document.getElementById('signupForm').reset();
+            
+            console.log("User signed out.");
+        }
+    </script>
+</body>
+</html>
