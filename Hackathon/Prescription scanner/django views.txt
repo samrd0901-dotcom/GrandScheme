@@ -1,0 +1,41 @@
+# views.py
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+import base64
+import json
+import os
+from datetime import datetime
+
+@csrf_exempt
+def upload_scanned_document(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            image_data = data.get('image')
+            format, imgstr = image_data.split(';base64,')
+            ext = format.split('/')[-1]
+            
+            # Generate a unique filename
+            filename = f"scanned_doc_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{ext}"
+            
+            # Save the file
+            file_content = ContentFile(base64.b64decode(imgstr), name=filename)
+            file_path = default_storage.save(f'scanned_docs/{filename}', file_content)
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Document uploaded successfully',
+                'file_path': file_path
+            })
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': str(e)
+            })
+    
+    return JsonResponse({
+        'status': 'error',
+        'message': 'Invalid request method'
+    })

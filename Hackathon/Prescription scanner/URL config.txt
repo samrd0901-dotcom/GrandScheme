@@ -1,0 +1,7 @@
+# urls.py
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('upload-scanned-doc/', views.upload_scanned_document, name='upload_scanned_doc'),
+]

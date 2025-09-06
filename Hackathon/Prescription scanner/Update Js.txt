@@ -1,0 +1,53 @@
+function uploadToDjango() {
+    if (!scannedImage.style.display || scannedImage.style.display === 'none') {
+        alert('Please scan or upload an image first');
+        return;
+    }
+    
+    // Convert image to base64
+    const canvas = document.createElement('canvas');
+    canvas.width = scannedImage.naturalWidth;
+    canvas.height = scannedImage.naturalHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(scannedImage, 0, 0);
+    
+    const imageData = canvas.toDataURL('image/png');
+    
+    // Send to Django
+    fetch('/upload-scanned-doc/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken'),
+        },
+        body: JSON.stringify({ image: imageData })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert('Document uploaded to Django successfully!');
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred during upload');
+    });
+}
+
+// Helper function to get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}

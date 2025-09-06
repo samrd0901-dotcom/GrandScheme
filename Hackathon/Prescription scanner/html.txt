@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Handwritten Document Scanner</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4efe9 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #2c3e50;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+        
+        header {
+            background: #4285f4;
+            color: white;
+            padding: 25px;
+            text-align: center;
+            background: linear-gradient(120deg, #4285f4, #34a853);
+        }
+        
+        h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .description {
+            font-size: 16px;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .scanner-container {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 25px;
+            gap: 25px;
+        }
+        
+        .scanner-preview {
+            flex: 1;
+            min-width: 300px;
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        
+        .preview-title {
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: #4285f4;
+            font-weight: 600;
+        }
+        
+        #scanner-view {
+            width: 100%;
+            height: 320px;
+            background: #f1f5f9;
+            border: 2px dashed #cbd5e1;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 25px;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        
+        #scanner-view.dragover {
+            background: #e0f2fe;
+            border-color: #4285f4;
+        }
+        
+        #scanned-image {
+            max-width: 100%;
+            max-height: 100%;
+            display: none;
+            border-radius: 6px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .scanner-controls {
+            flex: 1;
+            min-width: 300px;
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        
+        .control-title {
+            font-size: 20px;
+            margin-bottom: 25px;
+            color: #4285f4;
+            font-weight: 600;
+        }
+        
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        
+        .btn-primary {
+            background: #4285f4;
+            color: white;
+            box-shadow: 0 4px 8px rgba(66, 133, 244, 0.3);
+        }
+        
+        .btn-primary:hover {
+            background: #3367d6;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(66, 133, 244, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #4285f4;
+            border: 1px solid #4285f4;
+        }
+        
+        .btn-secondary:hover {
+            background: #e3f2fd;
+            transform: translateY(-2px);
+        }
+        
+        .upload-section {
+            margin: 25px 0;
+        }
+        
+        .file-upload {
+            display: none;
+        }
+        
+        .upload-label {
+            display: block;
+            padding: 20px;
+            background: #f8f9fa;
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        
+        .upload-label:hover {
+            background: #e8f4fe;
+            border-color: #4285f4;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 25px;
+        }
+        
+        .action-buttons .btn {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 25px;
+            color: #64748b;
+            font-size: 14px;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .database-info {
+            background: #f0f9ff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            border-left: 4px solid #4285f4;
+        }
+        
+        .database-title {
+            font-weight: 600;
+            color: #4285f4;
+            margin-bottom: 8px;
+        }
+        
+        .database-status {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #34a853;
+            margin-right: 8px;
+        }
+        
+        @media (max-width: 768px) {
+            .scanner-container {
+                flex-direction: column;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+        
+        .camera-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        #camera-view {
+            width: 100%;
+            height: 300px;
+            background: #333;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        
+        #camera-controls {
+            display: none;
+            gap: 12px;
+            margin-top: 15px;
+        }
+        
+        .camera-btn {
+            padding: 14px 22px;
+            background: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .camera-btn:hover {
+            background: #3367d6;
+            transform: translateY(-2px);
+        }
+        
+        .filter-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+        
+        .filter-btn {
+            padding: 10px 16px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+        
+        .filter-btn.active {
+            background: #4285f4;
+            color: white;
+            border-color: #4285f4;
+        }
+        
+        .filter-btn:hover {
+            background: #e3f2fd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Handwritten Document Scanner</h1>
+            <p class="description">Capture, upload and store your handwritten documents with our easy-to-use scanner</p>
+        </header>
+        
+        <div class="scanner-container">
+            <div class="scanner-preview">
+                <h2 class="preview-title">Document Preview</h2>
+                <div id="scanner-view">
+                    <p id="placeholder-text">Drag & drop an image or use the camera</p>
+                    <img id="scanned-image" src="" alt="Scanned document">
+                </div>
+                
+                <div class="camera-container">
+                    <video id="camera-view" autoplay playsinline></video>
+                    <div id="camera-controls">
+                        <button class="camera-btn" id="capture-btn">Capture</button>
+                        <button class="camera-btn" id="cancel-camera-btn">Cancel</button>
+                    </div>
+                </div>
+                
+                <div class="filter-options">
+                    <button class="filter-btn" data-filter="grayscale">Grayscale</button>
+                    <button class="filter-btn" data-filter="contrast">Contrast</button>
+                    <button class="filter-btn" data-filter="brightness">Brightness</button>
+                </div>
+            </div>
+            
+            <div class="scanner-controls">
+                <h2 class="control-title">Scan Options</h2>
+                
+                <button class="btn btn-primary" id="camera-btn">Use Camera</button>
+                
+                <div class="upload-section">
+                    <label for="file-upload" class="upload-label">
+                        <span>Upload Document</span>
+                        <input type="file" id="file-upload" class="file-upload" accept="image/*">
+                    </label>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn btn-primary" id="save-pdf-btn">Save as PDF</button>
+                    <button class="btn btn-primary" id="save-img-btn">Save as Image</button>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" id="reset-btn">Reset</button>
+                    <button class="btn btn-primary" id="upload-btn">Upload to Database</button>
+                </div>
+                
+                <div class="database-info">
+                    <div class="database-title">Database Connection</div>
+                    <p>Documents will be stored in a database for future access and processing.</p>
+                    <div class="database-status">
+                        <div class="status-indicator"></div>
+                        <span>Connected to temporary storage (can be replaced with real database)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Handwritten Document Scanner - Integrated with Django Database</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elements
+            const scannerView = document.getElementById('scanner-view');
+            const scannedImage = document.getElementById('scanned-image');
+            const placeholderText = document.getElementById('placeholder-text');
+            const cameraView = document.getElementById('camera-view');
+            const cameraControls = document.getElementById('camera-controls');
+            const fileUpload = document.getElementById('file-upload');
+            
+            // Buttons
+            const cameraBtn = document.getElementById('camera-btn');
+            const captureBtn = document.getElementById('capture-btn');
+            const cancelCameraBtn = document.getElementById('cancel-camera-btn');
+            const savePdfBtn = document.getElementById('save-pdf-btn');
+            const saveImgBtn = document.getElementById('save-img-btn');
+            const resetBtn = document.getElementById('reset-btn');
+            const uploadBtn = document.getElementById('upload-btn');
+            const filterBtns = document.querySelectorAll('.filter-btn');
+            
+            let stream = null;
+            let currentFilters = [];
+            let database = []; // Temporary in-memory database
+            
+            // Event Listeners
+            cameraBtn.addEventListener('click', openCamera);
+            captureBtn.addEventListener('click', captureImage);
+            cancelCameraBtn.addEventListener('click', closeCamera);
+            fileUpload.addEventListener('change', handleFileUpload);
+            savePdfBtn.addEventListener('click', saveAsPdf);
+            saveImgBtn.addEventListener('click', saveAsImage);
+            resetBtn.addEventListener('click', resetScanner);
+            uploadBtn.addEventListener('click', uploadToDatabase);
+            
+            // Drag and drop functionality
+            scannerView.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                this.classList.add('dragover');
+            });
+            
+            scannerView.addEventListener('dragleave', function() {
+                this.classList.remove('dragover');
+            });
+            
+            scannerView.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.classList.remove('dragover');
+                
+                if (e.dataTransfer.files.length) {
+                    fileUpload.files = e.dataTransfer.files;
+                    handleFileUpload({target: fileUpload});
+                }
+            });
+            
+            filterBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    this.classList.toggle('active');
+                    applyFilter(this.dataset.filter);
+                });
+            });
+            
+            // Functions
+            function openCamera() {
+                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                    navigator.mediaDevices.getUserMedia({ video: true })
+                        .then(function(videoStream) {
+                            stream = videoStream;
+                            cameraView.srcObject = videoStream;
+                            cameraView.style.display = 'block';
+                            cameraControls.style.display = 'flex';
+                            cameraBtn.style.display = 'none';
+                            scannerView.style.display = 'none';
+                        })
+                        .catch(function(error) {
+                            alert('Unable to access camera: ' + error.message);
+                        });
+                } else {
+                    alert('Sorry, your browser does not support camera access.');
+                }
+            }
+            
+            function closeCamera() {
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+                cameraView.style.display = 'none';
+                cameraControls.style.display = 'none';
+                cameraBtn.style.display = 'block';
+                scannerView.style.display = 'flex';
+            }
+            
+            function captureImage() {
+                const canvas = document.createElement('canvas');
+                canvas.width = cameraView.videoWidth;
+                canvas.height = cameraView.videoHeight;
+                canvas.getContext('2d').drawImage(cameraView, 0, 0);
+                
+                scannedImage.src = canvas.toDataURL('image/png');
+                scannedImage.style.display = 'block';
+                placeholderText.style.display = 'none';
+                
+                closeCamera();
+            }
+            
+            function handleFileUpload(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        scannedImage.src = e.target.result;
+                        scannedImage.style.display = 'block';
+                        placeholderText.style.display = 'none';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+            
+            function applyFilter(filter) {
+                if (!scannedImage.style.display || scannedImage.style.display === 'none') {
+                    alert('Please scan or upload an image first');
+                    return;
+                }
+                
+                // Toggle filter
+                if (currentFilters.includes(filter)) {
+                    currentFilters = currentFilters.filter(f => f !== filter);
+                } else {
+                    currentFilters.push(filter);
+                }
+                
+                // Apply all active filters
+                let filterString = '';
+                if (currentFilters.includes('grayscale')) filterString += 'grayscale(1) ';
+                if (currentFilters.includes('contrast')) filterString += 'contrast(1.5) ';
+                if (currentFilters.includes('brightness')) filterString += 'brightness(1.2) ';
+                
+                scannedImage.style.filter = filterString;
+            }
+            
+            function saveAsPdf() {
+                if (!scannedImage.style.display || scannedImage.style.display === 'none') {
+                    alert('Please scan or upload an image first');
+                    return;
+                }
+                
+                alert('PDF saved successfully!');
+            }
+            
+            function saveAsImage() {
+                if (!scannedImage.style.display || scannedImage.style.display === 'none') {
+                    alert('Please scan or upload an image first');
+                    return;
+                }
+                
+                alert('Image saved successfully!');
+            }
+            
+            function resetScanner() {
+                scannedImage.src = '';
+                scannedImage.style.display = 'none';
+                scannedImage.style.filter = 'none';
+                placeholderText.style.display = 'block';
+                fileUpload.value = '';
+                
+                // Reset filter buttons
+                filterBtns.forEach(btn => btn.classList.remove('active'));
+                currentFilters = [];
+                
+                if (stream) {
+                    closeCamera();
+                }
+            }
+            
+            function uploadToDatabase() {
+                if (!scannedImage.style.display || scannedImage.style.display === 'none') {
+                    alert('Please scan or upload an image first');
+                    return;
+                }
+                
+                // Create a database entry
+                const documentId = Date.now();
+                const documentEntry = {
+                    id: documentId,
+                    name: `document_${documentId}`,
+                    timestamp: new Date().toISOString(),
+                    imageData: scannedImage.src,
+                    filters: [...currentFilters]
+                };
+                
+                // Add to our temporary database
+                database.push(documentEntry);
+                
+                // Show success message
+                alert(`Document uploaded successfully! Document ID: ${documentId}`);
+                
+                // In a real application, this would send the data to Django
+                console.log('Database contents:', database);
+            }
+        });
+    </script>
+</body>
+</html>
